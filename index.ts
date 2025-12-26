@@ -49,7 +49,7 @@ const getTaskRequest = z.object({
 });
 
 const markTaskDoneRequest = z.object({
-  identifier: z.string(),
+  uuid: z.string(),
 });
 
 const addTaskRequest = z.object({
@@ -95,12 +95,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "get_next_tasks",
-        description: "Get a list of all pending tasks",
+        description: "Get a list of all pending tasks (returns JSON with UUIDs)",
         inputSchema: zodToJsonSchema(listPendingTasksRequest) as ToolInput,
       },
       {
         name: "mark_task_done", 
-        description: "Mark a task as done (completed)",
+        description: "Mark a task as done (completed) using its UUID",
         inputSchema: zodToJsonSchema(markTaskDoneRequest) as ToolInput,
       },
       {
@@ -132,7 +132,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (parsed.data.project) {
             task_args.push(`project:${parsed.data.project}`);
         }
-        const content = execSync(`task limit: ${task_args.join(" ")} next`, { maxBuffer: 1024 * 1024 * 10 }).toString().trim();
+        const content = execSync(`task status:pending ${task_args.join(" ")} export`, { maxBuffer: 1024 * 1024 * 10 }).toString().trim();
         return {
           content: [{ type: "text", text: content }],
         };
@@ -143,7 +143,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (!parsed.success) {
           throw new Error(`Invalid arguments for mark_task_done: ${parsed.error}`);
         }
-        const content = execSync(`task ${parsed.data.identifier} done`, { maxBuffer: 1024 * 1024 * 10 }).toString().trim();
+        const content = execSync(`task ${parsed.data.uuid} done`, { maxBuffer: 1024 * 1024 * 10 }).toString().trim();
         return {
           content: [{ type: "text", text: content }],
         };
